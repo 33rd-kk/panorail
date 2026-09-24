@@ -70,4 +70,68 @@ describe("openViewer", () => {
     expect(underneath).not.toHaveBeenCalled()
     window.removeEventListener("keydown", underneath)
   })
+
+  describe("panel", () => {
+    const toggle = () => document.querySelector<HTMLElement>(".pswp__button--panorail-panel-toggle")
+    const root = () => document.querySelector<HTMLElement>(".pswp")!
+
+    it("is absent unless asked for", () => {
+      handle = openViewer({ items: list(3), index: 0 })
+      expect(toggle()).toBeNull()
+      expect(document.querySelector(".pswp__panorail-panel")).toBeNull()
+    })
+
+    it("hands its element to the host and cleans up after it", () => {
+      const cleanup = vi.fn()
+      const mount = vi.fn(() => cleanup)
+      handle = openViewer({ items: list(3), index: 0, panel: { mount } })
+      expect(mount).toHaveBeenCalledTimes(1)
+      expect(mount.mock.calls[0][0]).toBe(document.querySelector(".pswp__panorail-panel"))
+      handle.destroy()
+      expect(cleanup).toHaveBeenCalledTimes(1)
+    })
+
+    it("starts as asked and toggles from the button and the i key", () => {
+      const onToggle = vi.fn()
+      handle = openViewer({ items: list(3), index: 0, panel: { open: true, onToggle, mount: () => {} } })
+      expect(root().classList.contains("panorail--panel-open")).toBe(true)
+      expect(toggle()!.getAttribute("aria-pressed")).toBe("true")
+
+      toggle()!.click()
+      expect(root().classList.contains("panorail--panel-open")).toBe(false)
+      expect(onToggle).toHaveBeenLastCalledWith(false)
+
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "i" }))
+      expect(root().classList.contains("panorail--panel-open")).toBe(true)
+      expect(onToggle).toHaveBeenLastCalledWith(true)
+    })
+
+    it("opens and closes from the handle without reporting it", () => {
+      const onToggle = vi.fn()
+      handle = openViewer({ items: list(3), index: 0, panel: { onToggle, mount: () => {} } })
+      handle.setPanelOpen(true)
+      expect(root().classList.contains("panorail--panel-open")).toBe(true)
+      handle.setPanelOpen(false)
+      expect(root().classList.contains("panorail--panel-open")).toBe(false)
+      expect(onToggle).not.toHaveBeenCalled()
+    })
+
+    it("keeps the wheel over the panel from zooming the image", () => {
+      let panelEl!: HTMLElement
+      handle = openViewer({ items: list(3), index: 0, panel: { open: true, mount: (el) => void (panelEl = el) } })
+      const onRootWheel = vi.fn()
+      root().addEventListener("wheel", onRootWheel)
+      panelEl.dispatchEvent(new WheelEvent("wheel", { bubbles: true, deltaY: 100 }))
+      expect(onRootWheel).not.toHaveBeenCalled()
+    })
+
+    it("leaves the i key alone without a panel", () => {
+      const underneath = vi.fn()
+      window.addEventListener("keydown", underneath)
+      handle = openViewer({ items: list(3), index: 0 })
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "i" }))
+      expect(underneath).toHaveBeenCalled()
+      window.removeEventListener("keydown", underneath)
+    })
+  })
 })

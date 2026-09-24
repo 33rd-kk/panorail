@@ -8,8 +8,15 @@ const DEFAULT_LABELS = {
     zoom: "拡大・縮小",
     download: "保存",
     error: "画像を読み込めませんでした",
+    panel: "タグ情報",
 };
 const KEY_ZOOM_STEP = 1.25;
+/** From this viewport width up the panel is a column on the right; below it, a sheet at the bottom. */
+const PANEL_SIDE_MIN_WIDTH = 768;
+/** Keep in step with panorail.css. */
+const PANEL_WIDTH = 340;
+const PANEL_SHEET_SHARE = 0.4;
+const ICON_PANEL = '<svg aria-hidden="true" class="pswp__icn" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v6.2a1 1 0 0 0 .3.7l8.8 8.8a1 1 0 0 0 1.4 0l6.2-6.2a1 1 0 0 0 0-1.4L10.9 4.3a1 1 0 0 0-.7-.3H4a1 1 0 0 0-1 1Z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg>';
 const ICON_DOWNLOAD = '<svg aria-hidden="true" class="pswp__icn" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>';
 /**
  * Opens a full-screen viewer over the page. Swipe or arrow keys move between
@@ -23,6 +30,9 @@ export function openViewer(options) {
     let silent = false;
     let closed = false;
     let lastIndex = options.index;
+    const panel = options.panel;
+    let panelOpen = !!panel?.open;
+    let panelCleanup;
     // Shared with PhotoSwipe, which reads its length for the slide count, so it
     // is updated in place rather than replaced.
     const dataSource = items.slice();
@@ -49,7 +59,28 @@ export function openViewer(options) {
         zoomTitle: labels.zoom,
         errorMsg: labels.error,
         mainClass: "panorail",
+        // The open panel takes its room from the image rather than covering it.
+        paddingFn: (viewport) => {
+            if (!panelOpen)
+                return { top: 0, bottom: 0, left: 0, right: 0 };
+            return viewport.x >= PANEL_SIDE_MIN_WIDTH
+                ? { top: 0, bottom: 0, left: 0, right: PANEL_WIDTH }
+                : { top: 0, bottom: Math.round(viewport.y * PANEL_SHEET_SHARE), left: 0, right: 0 };
+        },
     });
+    let panelButton;
+    const applyPanelOpen = (open) => {
+        panelOpen = open;
+        pswp.element?.classList.toggle("panorail--panel-open", open);
+        panelButton?.setAttribute("aria-pressed", String(open));
+        pswp.updateSize(true);
+    };
+    const togglePanel = () => {
+        if (!panel || closed)
+            return;
+        applyPanelOpen(!panelOpen);
+        panel.onToggle?.(panelOpen);
+    };
     pswp.addFilter("itemData", (data, index) => {
         const item = dataSource[index];
         if (!item)
@@ -160,6 +191,38 @@ export function openViewer(options) {
             },
         });
     });
+    if (panel) {
+        pswp.on("uiRegister", () => {
+            pswp.ui?.registerElement({
+                name: "panorail-panel-toggle",
+                order: 7,
+                isButton: true,
+                title: labels.panel,
+                ariaLabel: labels.panel,
+                html: ICON_PANEL,
+                onInit: (el) => {
+                    panelButton = el;
+                    el.setAttribute("aria-pressed", String(panelOpen));
+                },
+                onClick: () => togglePanel(),
+            });
+            pswp.ui?.registerElement({
+                name: "panorail-panel",
+                order: 10,
+                isButton: false,
+                appendTo: "root",
+                onInit: (el) => {
+                    el.setAttribute("role", "complementary");
+                    el.setAttribute("aria-label", labels.panel);
+                    // PhotoSwipe zooms on a wheel anywhere in the viewer; here it scrolls.
+                    el.addEventListener("wheel", (event) => event.stopPropagation());
+                    const cleanup = panel.mount(el);
+                    if (typeof cleanup === "function")
+                        panelCleanup = cleanup;
+                },
+            });
+        });
+    }
     const maybeLoadMore = async () => {
         if (!options.loadMore || !shouldLoadMore(pswp.currIndex, dataSource.length, hasMore, loading))
             return;
@@ -207,6 +270,8 @@ export function openViewer(options) {
             zoomBy(1 / KEY_ZOOM_STEP);
         else if (event.key === "0")
             pswp.currSlide?.zoomTo(pswp.currSlide.zoomLevels.initial, undefined, 200);
+        else if (panel && (event.key === "i" || event.key === "I"))
+            togglePanel();
         else
             handled = false;
         if (handled) {
@@ -222,6 +287,8 @@ export function openViewer(options) {
     });
     pswp.on("destroy", () => {
         window.removeEventListener("keydown", onKey, true);
+        panelCleanup?.();
+        panelCleanup = undefined;
         if (!silent)
             options.onClose?.();
     });
@@ -241,6 +308,8 @@ export function openViewer(options) {
             pswp.close();
     });
     pswp.init();
+    if (panelOpen)
+        pswp.element?.classList.add("panorail--panel-open");
     return {
         setItems(next, nextHasMore) {
             if (closed)
@@ -279,6 +348,10 @@ export function openViewer(options) {
             pswp.isDestroying = true;
             closed = true;
             pswp.destroy();
+        },
+        setPanelOpen(open) {
+            if (panel && !closed && open !== panelOpen)
+                applyPanelOpen(open);
         },
     };
 }
