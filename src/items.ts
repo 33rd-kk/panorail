@@ -58,3 +58,17 @@ export class FallbackTracker {
     return this.used.has(item.src) && item.fallbackSrc ? item.fallbackSrc : item.src
   }
 }
+
+const SAFE_LINK_PROTOCOLS = new Set(["http:", "https:", "blob:"])
+
+/** Whether `url` may be put in a link's href: http(s), blob, or an image data URL. */
+export function isSafeLinkUrl(url: string, base: string = document.baseURI): boolean {
+  let parsed: URL
+  try {
+    parsed = new URL(url, base)
+  } catch {
+    return false
+  }
+  if (parsed.protocol === "data:") return /^image\//i.test(parsed.pathname)
+  return SAFE_LINK_PROTOCOLS.has(parsed.protocol)
+}

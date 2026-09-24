@@ -134,4 +134,25 @@ describe("openViewer", () => {
       window.removeEventListener("keydown", underneath)
     })
   })
+
+  it("never renders html carried on an item", () => {
+    const items = [{ src: "/a.png", type: "html", html: '<b class="injected">x</b>' }] as never
+    handle = openViewer({ items, index: 0 })
+    vi.runAllTimers()
+    expect(document.querySelector(".injected")).toBeNull()
+  })
+
+  it("hides the save button for a script URL", () => {
+    handle = openViewer({ items: [{ src: "javascript:alert(1)", downloadName: "a.png" }], index: 0 })
+    const link = document.querySelector<HTMLAnchorElement>(".pswp__button--panorail-download")!
+    expect(link.hidden).toBe(true)
+    expect(link.hasAttribute("href")).toBe(false)
+  })
+
+  it("links the save button to a normal image", () => {
+    handle = openViewer({ items: [{ src: "/a.png", downloadName: "a.png" }], index: 0 })
+    const link = document.querySelector<HTMLAnchorElement>(".pswp__button--panorail-download")!
+    expect(link.hidden).toBe(false)
+    expect(link.getAttribute("href")).toBe("/a.png")
+  })
 })

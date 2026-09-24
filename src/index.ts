@@ -1,9 +1,9 @@
 import PhotoSwipe from "photoswipe"
 import type { SlideData } from "photoswipe"
-import { FallbackTracker, changedIndices, shouldLoadMore, type ViewerItem } from "./items.js"
+import { FallbackTracker, changedIndices, isSafeLinkUrl, shouldLoadMore, type ViewerItem } from "./items.js"
 
 export type { ViewerItem } from "./items.js"
-export { shouldLoadMore, changedIndices, FallbackTracker, LOAD_MORE_THRESHOLD } from "./items.js"
+export { shouldLoadMore, changedIndices, isSafeLinkUrl, FallbackTracker, LOAD_MORE_THRESHOLD } from "./items.js"
 
 export interface ViewerLabels {
   close: string
@@ -153,7 +153,9 @@ export function openViewer(options: ViewerOptions): ViewerHandle {
     const item = dataSource[index]
     if (!item) return data
     const size = item.width && item.height ? item : measured.get(item.src)
-    const out: SizedSlideData = { ...item, src: fallbacks.current(item), alt: item.name ?? "" }
+    // Only the fields the viewer needs: PhotoSwipe renders a `type: "html"`
+    // slide's `html` with innerHTML, so nothing else on the item may pass through.
+    const out: SizedSlideData = { src: fallbacks.current(item), alt: item.name ?? "" }
     if (size?.width && size.height) {
       out.width = size.width
       out.height = size.height
@@ -231,10 +233,15 @@ export function openViewer(options: ViewerOptions): ViewerHandle {
         const link = el as HTMLAnchorElement
         const update = () => {
           const item = dataSource[p.currIndex]
-          link.hidden = !item?.downloadName
-          if (!item?.downloadName) return
-          link.href = fallbacks.current(item)
-          link.download = item.downloadName
+          const href = item?.downloadName ? fallbacks.current(item) : ""
+          // A javascript: URL here would run on click.
+          link.hidden = !href || !isSafeLinkUrl(href)
+          if (link.hidden) {
+            link.removeAttribute("href")
+            return
+          }
+          link.href = href
+          link.download = item!.downloadName!
         }
         p.on("change", update)
         update()

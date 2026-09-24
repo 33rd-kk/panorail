@@ -1,6 +1,6 @@
 import { type ViewerItem } from "./items.js";
 export type { ViewerItem } from "./items.js";
-export { shouldLoadMore, changedIndices, FallbackTracker, LOAD_MORE_THRESHOLD } from "./items.js";
+export { shouldLoadMore, changedIndices, isSafeLinkUrl, FallbackTracker, LOAD_MORE_THRESHOLD } from "./items.js";
 export interface ViewerLabels {
     close: string;
     prev: string;

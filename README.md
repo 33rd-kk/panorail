@@ -55,7 +55,7 @@ const viewer = openViewer({
 | `src` | The image URL. |
 | `fallbackSrc` | Tried once if `src` fails to load. |
 | `name` | Shown as the caption and used as the alt text. |
-| `downloadName` | When set, the save button appears and downloads the image under this filename. |
+| `downloadName` | When set, the save button appears and downloads the image under this filename. It stays hidden for an image URL that is not http(s), blob, or `data:image/`. |
 | `referrerPolicy` | Referrer policy for this image's request. |
 | `width`, `height` | The image's natural size. Pass them if you know them. If you don't, panorail measures the image once it loads. |
 
