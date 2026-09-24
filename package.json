@@ -1,6 +1,6 @@
 {
   "name": "panorail",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Swipe and pinch image viewer for galleries, a thin layer over PhotoSwipe 5 usable from any framework.",
   "license": "MIT",
   "author": "33rd-kk",
