@@ -550,6 +550,10 @@ div.pswp__img--placeholder,
     padding-right: calc(16px + env(safe-area-inset-right, 0px));
     border-top-left-radius: 12px;
   }
+
+  .panorail.panorail--panel-open .pswp__button--arrow--next {
+    right: calc(340px + env(safe-area-inset-right, 0px));
+  }
 }
 
 @media (max-width: 767.98px) {
