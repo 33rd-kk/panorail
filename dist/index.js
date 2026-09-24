@@ -62,7 +62,9 @@ export function openViewer(options) {
         }
         else {
             // A guess the size of the screen keeps the slide sane until it loads.
-            out.width = window.innerWidth;
+            // Measured as PhotoSwipe measures it: innerWidth grows on a page that
+            // overflows sideways on a phone, clientWidth does not.
+            out.width = document.documentElement.clientWidth;
             out.height = window.innerHeight;
             out.panorailGuess = true;
         }
