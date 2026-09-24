@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { FallbackTracker, changedIndices, shouldLoadMore } from "../src/items"
+import { FallbackTracker, changedIndices, isSafeLinkUrl, shouldLoadMore } from "../src/items"
 
 describe("shouldLoadMore", () => {
   it("asks once within the threshold of the end", () => {
@@ -44,5 +44,19 @@ describe("FallbackTracker", () => {
 
   it("gives up at once without a fallback", () => {
     expect(new FallbackTracker().nextSource({ src: "a" }, true)).toBeNull()
+  })
+})
+
+describe("isSafeLinkUrl", () => {
+  const base = "https://example.com/gallery/"
+  it("allows web, blob, and image data URLs", () => {
+    for (const url of ["https://cdn.example.com/a.png", "http://x/a.png", "/a.png", "a.png", "blob:https://example.com/1", "data:image/png;base64,AAAA"]) {
+      expect(isSafeLinkUrl(url, base), url).toBe(true)
+    }
+  })
+  it("rejects script and other data URLs", () => {
+    for (const url of ["javascript:alert(1)", "JavaScript:alert(1)", " javascript:alert(1)", "java\tscript:alert(1)", "vbscript:x", "data:text/html,<script>alert(1)</script>"]) {
+      expect(isSafeLinkUrl(url, base), url).toBe(false)
+    }
   })
 })

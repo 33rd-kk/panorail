@@ -1,6 +1,6 @@
 import PhotoSwipe from "photoswipe";
-import { FallbackTracker, changedIndices, shouldLoadMore } from "./items.js";
-export { shouldLoadMore, changedIndices, FallbackTracker, LOAD_MORE_THRESHOLD } from "./items.js";
+import { FallbackTracker, changedIndices, isSafeLinkUrl, shouldLoadMore } from "./items.js";
+export { shouldLoadMore, changedIndices, isSafeLinkUrl, FallbackTracker, LOAD_MORE_THRESHOLD } from "./items.js";
 const DEFAULT_LABELS = {
     close: "閉じる",
     prev: "前の画像",
@@ -86,7 +86,9 @@ export function openViewer(options) {
         if (!item)
             return data;
         const size = item.width && item.height ? item : measured.get(item.src);
-        const out = { ...item, src: fallbacks.current(item), alt: item.name ?? "" };
+        // Only the fields the viewer needs: PhotoSwipe renders a `type: "html"`
+        // slide's `html` with innerHTML, so nothing else on the item may pass through.
+        const out = { src: fallbacks.current(item), alt: item.name ?? "" };
         if (size?.width && size.height) {
             out.width = size.width;
             out.height = size.height;
@@ -165,10 +167,14 @@ export function openViewer(options) {
                 const link = el;
                 const update = () => {
                     const item = dataSource[p.currIndex];
-                    link.hidden = !item?.downloadName;
-                    if (!item?.downloadName)
+                    const href = item?.downloadName ? fallbacks.current(item) : "";
+                    // A javascript: URL here would run on click.
+                    link.hidden = !href || !isSafeLinkUrl(href);
+                    if (link.hidden) {
+                        link.removeAttribute("href");
                         return;
-                    link.href = fallbacks.current(item);
+                    }
+                    link.href = href;
                     link.download = item.downloadName;
                 };
                 p.on("change", update);

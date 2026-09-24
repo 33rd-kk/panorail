@@ -29,3 +29,5 @@ export declare class FallbackTracker {
     nextSource(item: ViewerItem, failed: boolean): string | null;
     current(item: ViewerItem): string;
 }
+/** Whether `url` may be put in a link's href: http(s), blob, or an image data URL. */
+export declare function isSafeLinkUrl(url: string, base?: string): boolean;
