@@ -1,0 +1,75 @@
+/* Appended to PhotoSwipe's own stylesheet at build time. */
+
+.panorail {
+  --pswp-bg: #000;
+  --pswp-placeholder-bg: #111;
+}
+
+/* Keep the controls clear of notches and the home indicator. */
+.panorail .pswp__top-bar {
+  top: env(safe-area-inset-top, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.panorail .pswp__button--arrow--prev {
+  left: env(safe-area-inset-left, 0px);
+}
+
+.panorail .pswp__button--arrow--next {
+  right: env(safe-area-inset-right, 0px);
+}
+
+/* PhotoSwipe hides the arrows on touch screens; swiping takes their place. */
+
+.panorail .pswp__panorail-counter {
+  height: 30px;
+  margin-top: 15px;
+  margin-inline-start: 20px;
+  font-size: 14px;
+  line-height: 30px;
+  color: var(--pswp-icon-color);
+  text-shadow: 1px 1px 3px var(--pswp-icon-color-secondary);
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+
+.panorail .pswp__button--panorail-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panorail .pswp__button--panorail-download[hidden] {
+  display: none;
+}
+
+.panorail .pswp__button--panorail-download .pswp__icn {
+  position: static;
+  width: 24px;
+  height: 24px;
+  color: var(--pswp-icon-color);
+  filter: drop-shadow(1px 1px 2px var(--pswp-icon-color-secondary));
+}
+
+.panorail .pswp__panorail-caption {
+  position: absolute;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  max-width: min(80vw, 480px);
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.panorail .pswp__panorail-caption[hidden] {
+  display: none;
+}

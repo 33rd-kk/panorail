@@ -1,0 +1,40 @@
+{
+  "name": "panorail",
+  "version": "0.1.0",
+  "description": "Swipe and pinch image viewer for galleries, a thin layer over PhotoSwipe 5 usable from any framework.",
+  "license": "MIT",
+  "author": "33rd-kk",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/33rd-kk/panorail.git"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "photoswipe": "^5.4.4"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}
