@@ -135,6 +135,74 @@ describe("openViewer", () => {
     })
   })
 
+  describe("host buttons", () => {
+    const hostButtons = () => [...document.querySelectorAll<HTMLButtonElement>(".pswp__button--panorail-host")]
+
+    it("are absent unless asked for", () => {
+      handle = openViewer({ items: list(3), index: 0 })
+      expect(hostButtons()).toEqual([])
+    })
+
+    it("sit in the bar in the host's order, before the viewer's own buttons", () => {
+      handle = openViewer({
+        items: list(3),
+        index: 0,
+        panel: { mount: () => {} },
+        buttons: [
+          { label: "first", mount: () => {} },
+          { label: "second", mount: () => {} },
+        ],
+      })
+      const bar = [...document.querySelector(".pswp__top-bar")!.children]
+      const [first, second] = hostButtons()
+      expect(first.getAttribute("aria-label")).toBe("first")
+      expect(first.title).toBe("first")
+      expect(second.getAttribute("aria-label")).toBe("second")
+      const at = (el: Element | null) => bar.indexOf(el!)
+      expect(at(document.querySelector(".pswp__panorail-counter"))).toBeLessThan(at(first))
+      expect(at(first)).toBeLessThan(at(second))
+      expect(at(second)).toBeLessThan(at(document.querySelector(".pswp__button--panorail-panel-toggle")))
+      expect(at(second)).toBeLessThan(at(document.querySelector(".pswp__button--panorail-download")))
+    })
+
+    it("hand the button to the host and clean up after it", () => {
+      const cleanup = vi.fn()
+      const mount = vi.fn((el: HTMLButtonElement) => {
+        el.append(document.createElement("svg"))
+        return cleanup
+      })
+      handle = openViewer({ items: list(3), index: 0, buttons: [{ label: "eye", mount }] })
+      expect(mount).toHaveBeenCalledTimes(1)
+      const [button] = hostButtons()
+      expect(mount.mock.calls[0][0]).toBe(button)
+      expect(button.tagName).toBe("BUTTON")
+      expect(button.type).toBe("button")
+      handle.destroy()
+      expect(cleanup).toHaveBeenCalledTimes(1)
+    })
+
+    it("clean up when the viewer closes itself too", () => {
+      const cleanup = vi.fn()
+      handle = openViewer({ items: list(3), index: 0, buttons: [{ label: "eye", mount: () => cleanup }] })
+      vi.runAllTimers()
+      handle.close()
+      vi.runAllTimers()
+      expect(cleanup).toHaveBeenCalledTimes(1)
+    })
+
+    it("report clicks while open, and none once closing", () => {
+      const onClick = vi.fn()
+      handle = openViewer({ items: list(3), index: 0, buttons: [{ label: "eye", onClick, mount: () => {} }] })
+      const [button] = hostButtons()
+      button.click()
+      expect(onClick).toHaveBeenCalledTimes(1)
+      vi.runAllTimers()
+      handle.close()
+      button.click()
+      expect(onClick).toHaveBeenCalledTimes(1)
+    })
+  })
+
   it("never renders html carried on an item", () => {
     const items = [{ src: "/a.png", type: "html", html: '<b class="injected">x</b>' }] as never
     handle = openViewer({ items, index: 0 })

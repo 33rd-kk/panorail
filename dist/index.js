@@ -33,6 +33,7 @@ export function openViewer(options) {
     const panel = options.panel;
     let panelOpen = !!panel?.open;
     let panelCleanup;
+    const buttonCleanups = [];
     // Shared with PhotoSwipe, which reads its length for the slide count, so it
     // is updated in place rather than replaced.
     const dataSource = items.slice();
@@ -229,6 +230,30 @@ export function openViewer(options) {
             });
         });
     }
+    if (options.buttons?.length) {
+        const buttons = options.buttons.slice();
+        pswp.on("uiRegister", () => {
+            for (const button of buttons) {
+                // Same order for all: PhotoSwipe's sort is stable, so they keep the host's order.
+                pswp.ui?.registerElement({
+                    name: "panorail-host",
+                    order: 6,
+                    isButton: true,
+                    title: button.label,
+                    ariaLabel: button.label,
+                    onInit: (el) => {
+                        const cleanup = button.mount(el);
+                        if (typeof cleanup === "function")
+                            buttonCleanups.push(cleanup);
+                    },
+                    onClick: () => {
+                        if (!closed)
+                            button.onClick?.();
+                    },
+                });
+            }
+        });
+    }
     const maybeLoadMore = async () => {
         if (!options.loadMore || !shouldLoadMore(pswp.currIndex, dataSource.length, hasMore, loading))
             return;
@@ -295,6 +320,8 @@ export function openViewer(options) {
         window.removeEventListener("keydown", onKey, true);
         panelCleanup?.();
         panelCleanup = undefined;
+        for (const cleanup of buttonCleanups.splice(0))
+            cleanup();
         if (!silent)
             options.onClose?.();
     });

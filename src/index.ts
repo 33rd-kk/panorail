@@ -28,6 +28,18 @@ export interface ViewerPanel {
   mount: (el: HTMLElement) => void | (() => void)
 }
 
+export interface ViewerButton {
+  /** The button's tooltip and accessible name. */
+  label: string
+  onClick?: () => void
+  /**
+   * Called once with the button, for the host to render its icon into (a React
+   * portal, a Vue Teleport, plain DOM) and set any state on it, such as
+   * `aria-pressed`. A function returned is called when the viewer goes away.
+   */
+  mount: (el: HTMLButtonElement) => void | (() => void)
+}
+
 export interface ViewerOptions {
   items: ViewerItem[]
   index: number
@@ -41,6 +53,8 @@ export interface ViewerOptions {
   labels?: Partial<ViewerLabels>
   /** A side panel, shown and hidden from a button in the bar, that the host fills. */
   panel?: ViewerPanel
+  /** Buttons of the host's own, in the bar after the counter and before the viewer's buttons. */
+  buttons?: ViewerButton[]
 }
 
 export interface ViewerHandle {
@@ -99,6 +113,7 @@ export function openViewer(options: ViewerOptions): ViewerHandle {
   const panel = options.panel
   let panelOpen = !!panel?.open
   let panelCleanup: (() => void) | undefined
+  const buttonCleanups: (() => void)[] = []
 
   // Shared with PhotoSwipe, which reads its length for the slide count, so it
   // is updated in place rather than replaced.
@@ -296,6 +311,29 @@ export function openViewer(options: ViewerOptions): ViewerHandle {
     })
   }
 
+  if (options.buttons?.length) {
+    const buttons = options.buttons.slice()
+    pswp.on("uiRegister", () => {
+      for (const button of buttons) {
+        // Same order for all: PhotoSwipe's sort is stable, so they keep the host's order.
+        pswp.ui?.registerElement({
+          name: "panorail-host",
+          order: 6,
+          isButton: true,
+          title: button.label,
+          ariaLabel: button.label,
+          onInit: (el) => {
+            const cleanup = button.mount(el as HTMLButtonElement)
+            if (typeof cleanup === "function") buttonCleanups.push(cleanup)
+          },
+          onClick: () => {
+            if (!closed) button.onClick?.()
+          },
+        })
+      }
+    })
+  }
+
   const maybeLoadMore = async () => {
     if (!options.loadMore || !shouldLoadMore(pswp.currIndex, dataSource.length, hasMore, loading)) return
     loading = true
@@ -353,6 +391,7 @@ export function openViewer(options: ViewerOptions): ViewerHandle {
     window.removeEventListener("keydown", onKey, true)
     panelCleanup?.()
     panelCleanup = undefined
+    for (const cleanup of buttonCleanups.splice(0)) cleanup()
     if (!silent) options.onClose?.()
   })
 

@@ -16,6 +16,7 @@ It is a thin layer over [PhotoSwipe 5](https://photoswipe.com/) (MIT). Gestures 
 - **Images without a known size.** It measures them after they load.
 - **A save button.**
 - **A side panel the host fills.** A button in the bar, or the `i` key, shows and hides it.
+- **Buttons of your own in the bar.** You render their icons; the viewer places and styles them.
 - **Captions and a counter.**
 - **Safe areas.** The controls stay clear of phone notches and the home indicator.
 
@@ -86,6 +87,37 @@ openViewer({
 | `mount(el)` | Called once with the panel's element. A function it returns is called when the viewer goes away. |
 
 The panel does not follow the image on screen by itself. Use `onIndexChange` to update what you render in it. Mouse wheel scrolling over the panel scrolls the panel and does not zoom the image.
+
+### Buttons
+
+Pass `buttons` to add buttons of your own to the bar, such as a switch for something in your app. They sit after the counter and before the viewer's own buttons, in the order you give.
+
+```ts
+openViewer({
+  items,
+  index,
+  buttons: [
+    {
+      label: "Blur pictures",
+      onClick: () => setBlur(!blur),
+      // `el` is the <button>. Render its icon however you like and set any state on it.
+      mount: (el) => {
+        el.append(blurIcon())
+        el.setAttribute("aria-pressed", String(blur))
+        return () => { /* called when the viewer goes away */ }
+      },
+    },
+  ],
+})
+```
+
+| Field | Description |
+| --- | --- |
+| `label` | The button's tooltip and accessible name. |
+| `onClick()` | Called when the button is clicked, while the viewer is open. |
+| `mount(el)` | Called once with the `<button>` element. A function it returns is called when the viewer goes away. |
+
+The button takes no HTML string: what goes in it is up to `mount`. An `<svg>` in it is sized and coloured like the viewer's own icons. Set `hidden` on the button to hide it.
 
 ### Methods on the returned handle
 
