@@ -203,6 +203,67 @@ describe("openViewer", () => {
     })
   })
 
+  describe("veil", () => {
+    const images = () => [...document.querySelectorAll<HTMLImageElement>(".pswp__img")]
+    const veiled = () => images().filter((img) => img.classList.contains("panorail-veiled")).map((img) => img.alt)
+    const named = (n: number) => Array.from({ length: n }, (_, i) => ({ src: `/img/${i}.png`, name: `${i}` }))
+    // PhotoSwipe loads an image only once it has a size on screen; jsdom's viewport has none.
+    beforeEach(() => {
+      vi.spyOn(document.documentElement, "clientWidth", "get").mockReturnValue(1024)
+      vi.spyOn(window, "innerHeight", "get").mockReturnValue(768)
+    })
+    afterEach(() => vi.restoreAllMocks())
+
+    it("covers nothing unless asked for", () => {
+      handle = openViewer({ items: named(3), index: 1 })
+      vi.runAllTimers()
+      expect(images().length).toBeGreaterThan(0)
+      expect(veiled()).toEqual([])
+    })
+
+    it("covers the images it picks, including the ones next to the current one", () => {
+      handle = openViewer({ items: named(3), index: 1, veil: (item) => item.src !== "/img/1.png" })
+      vi.runAllTimers()
+      expect(veiled().sort()).toEqual(["0", "2"])
+    })
+
+    it("is in place before the image starts loading", () => {
+      let veiledAtLoad: boolean | undefined
+      const src = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src")!
+      const spy = vi.spyOn(HTMLImageElement.prototype, "src", "set").mockImplementation(function (this: HTMLImageElement, v) {
+        veiledAtLoad ??= this.classList.contains("panorail-veiled")
+        src.set!.call(this, v)
+      })
+      handle = openViewer({ items: named(1), index: 0, veil: () => true })
+      vi.runAllTimers()
+      spy.mockRestore()
+      expect(veiledAtLoad).toBe(true)
+    })
+
+    it("changes on the images already loaded", () => {
+      handle = openViewer({ items: named(3), index: 1 })
+      vi.runAllTimers()
+      handle.setVeil(() => true)
+      expect(veiled().sort()).toEqual(["0", "1", "2"])
+      handle.setVeil((item) => item.name === "1")
+      expect(veiled()).toEqual(["1"])
+      handle.setVeil()
+      expect(veiled()).toEqual([])
+    })
+
+    it("covers the image when the host's veil throws", () => {
+      handle = openViewer({
+        items: named(1),
+        index: 0,
+        veil: () => {
+          throw new Error("boom")
+        },
+      })
+      vi.runAllTimers()
+      expect(veiled()).toEqual(["0"])
+    })
+  })
+
   it("never renders html carried on an item", () => {
     const items = [{ src: "/a.png", type: "html", html: '<b class="injected">x</b>' }] as never
     handle = openViewer({ items, index: 0 })
