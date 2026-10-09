@@ -22,6 +22,17 @@ export interface ViewerPanel {
      */
     mount: (el: HTMLElement) => void | (() => void);
 }
+export interface ViewerButton {
+    /** The button's tooltip and accessible name. */
+    label: string;
+    onClick?: () => void;
+    /**
+     * Called once with the button, for the host to render its icon into (a React
+     * portal, a Vue Teleport, plain DOM) and set any state on it, such as
+     * `aria-pressed`. A function returned is called when the viewer goes away.
+     */
+    mount: (el: HTMLButtonElement) => void | (() => void);
+}
 export interface ViewerOptions {
     items: ViewerItem[];
     index: number;
@@ -35,6 +46,8 @@ export interface ViewerOptions {
     labels?: Partial<ViewerLabels>;
     /** A side panel, shown and hidden from a button in the bar, that the host fills. */
     panel?: ViewerPanel;
+    /** Buttons of the host's own, in the bar after the counter and before the viewer's buttons. */
+    buttons?: ViewerButton[];
 }
 export interface ViewerHandle {
     /** Replace the list. Closes the viewer if the image on screen no longer exists. */

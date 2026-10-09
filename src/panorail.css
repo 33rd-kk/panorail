@@ -52,6 +52,24 @@
   filter: drop-shadow(1px 1px 2px var(--pswp-icon-color-secondary));
 }
 
+/* The host's buttons: whatever icon it renders sits like the viewer's own. */
+.panorail .pswp__button--panorail-host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pswp-icon-color);
+}
+
+.panorail .pswp__button--panorail-host[hidden] {
+  display: none;
+}
+
+.panorail .pswp__button--panorail-host svg {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(1px 1px 2px var(--pswp-icon-color-secondary));
+}
+
 .panorail .pswp__panorail-caption {
   position: absolute;
   left: 50%;
