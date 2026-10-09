@@ -55,6 +55,12 @@ export interface ViewerOptions {
   panel?: ViewerPanel
   /** Buttons of the host's own, in the bar after the counter and before the viewer's buttons. */
   buttons?: ViewerButton[]
+  /**
+   * Blurs the images it returns true for, such as every image while a privacy
+   * mode is on. Applied before an image loads, so it never shows sharp.
+   * `setVeil` changes it later.
+   */
+  veil?: (item: ViewerItem) => boolean
 }
 
 export interface ViewerHandle {
@@ -67,6 +73,8 @@ export interface ViewerHandle {
   destroy(): void
   /** Opens or closes the panel, when there is one. Does not call `onToggle`. */
   setPanelOpen(open: boolean): void
+  /** Replaces `veil` and applies it to the images already loaded. Pass nothing to blur none. */
+  setVeil(veil?: (item: ViewerItem) => boolean): void
 }
 
 const DEFAULT_LABELS: ViewerLabels = {
@@ -114,6 +122,20 @@ export function openViewer(options: ViewerOptions): ViewerHandle {
   let panelOpen = !!panel?.open
   let panelCleanup: (() => void) | undefined
   const buttonCleanups: (() => void)[] = []
+  let veil = options.veil
+  // Every image element the viewer holds, loaded or cached, with its item, so
+  // a new veil reaches them all.
+  const images = new Map<HTMLImageElement, ViewerItem>()
+  const applyVeil = (img: HTMLImageElement, item: ViewerItem) => {
+    let veiled = false
+    try {
+      veiled = !!veil?.(item)
+    } catch {
+      // A veil that fails covers the image rather than leaving it in view.
+      veiled = true
+    }
+    img.classList.toggle("panorail-veiled", veiled)
+  }
 
   // Shared with PhotoSwipe, which reads its length for the slide count, so it
   // is updated in place rather than replaced.
@@ -197,6 +219,8 @@ export function openViewer(options: ViewerOptions): ViewerHandle {
     if (item.referrerPolicy) img.referrerPolicy = item.referrerPolicy
     img.alt = item.name ?? ""
     img.decoding = "async"
+    images.set(img, item)
+    applyVeil(img, item)
     content.state = "loading"
 
     img.onload = () => {
@@ -220,6 +244,9 @@ export function openViewer(options: ViewerOptions): ViewerHandle {
       else content.onError()
     }
     img.src = fallbacks.current(item)
+  })
+  pswp.on("contentDestroy", ({ content }) => {
+    if (content.element instanceof HTMLImageElement) images.delete(content.element)
   })
 
   pswp.on("uiRegister", () => {
@@ -392,6 +419,7 @@ export function openViewer(options: ViewerOptions): ViewerHandle {
     panelCleanup?.()
     panelCleanup = undefined
     for (const cleanup of buttonCleanups.splice(0)) cleanup()
+    images.clear()
     if (!silent) options.onClose?.()
   })
 
@@ -446,6 +474,10 @@ export function openViewer(options: ViewerOptions): ViewerHandle {
     },
     setPanelOpen(open) {
       if (panel && !closed && open !== panelOpen) applyPanelOpen(open)
+    },
+    setVeil(next) {
+      veil = next
+      for (const [img, item] of images) applyVeil(img, item)
     },
   }
 }

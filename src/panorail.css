@@ -70,6 +70,11 @@
   filter: drop-shadow(1px 1px 2px var(--pswp-icon-color-secondary));
 }
 
+/* Images the host's veil covers. Override --panorail-veil-blur to change how much. */
+.panorail .pswp__img.panorail-veiled {
+  filter: blur(var(--panorail-veil-blur, 32px));
+}
+
 .panorail .pswp__panorail-caption {
   position: absolute;
   left: 50%;

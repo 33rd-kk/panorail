@@ -48,6 +48,12 @@ export interface ViewerOptions {
     panel?: ViewerPanel;
     /** Buttons of the host's own, in the bar after the counter and before the viewer's buttons. */
     buttons?: ViewerButton[];
+    /**
+     * Blurs the images it returns true for, such as every image while a privacy
+     * mode is on. Applied before an image loads, so it never shows sharp.
+     * `setVeil` changes it later.
+     */
+    veil?: (item: ViewerItem) => boolean;
 }
 export interface ViewerHandle {
     /** Replace the list. Closes the viewer if the image on screen no longer exists. */
@@ -59,6 +65,8 @@ export interface ViewerHandle {
     destroy(): void;
     /** Opens or closes the panel, when there is one. Does not call `onToggle`. */
     setPanelOpen(open: boolean): void;
+    /** Replaces `veil` and applies it to the images already loaded. Pass nothing to blur none. */
+    setVeil(veil?: (item: ViewerItem) => boolean): void;
 }
 /**
  * Opens a full-screen viewer over the page. Swipe or arrow keys move between

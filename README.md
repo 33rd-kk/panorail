@@ -17,6 +17,7 @@ It is a thin layer over [PhotoSwipe 5](https://photoswipe.com/) (MIT). Gestures 
 - **A save button.**
 - **A side panel the host fills.** A button in the bar, or the `i` key, shows and hides it.
 - **Buttons of your own in the bar.** You render their icons; the viewer places and styles them.
+- **A veil.** Blurs the images you pick, from before they load.
 - **Captions and a counter.**
 - **Safe areas.** The controls stay clear of phone notches and the home indicator.
 
@@ -119,6 +120,22 @@ openViewer({
 
 The button takes no HTML string: what goes in it is up to `mount`. An `<svg>` in it is sized and coloured like the viewer's own icons. Set `hidden` on the button to hide it.
 
+### Veil
+
+Pass `veil` to blur some or all images, for example while a privacy mode is on. It is called with each item and blurs the image when it returns `true`. The blur is set before the image starts loading, so a veiled image never shows sharp, not even the next or previous one while you swipe. If `veil` throws, the image is blurred.
+
+```ts
+const viewer = openViewer({
+  items,
+  index,
+  veil: (item) => privacyMode && item.src !== revealedSrc,
+})
+// Later, when the mode or the revealed image changes:
+viewer.setVeil(privacyMode ? (item) => item.src !== revealedSrc : undefined)
+```
+
+To change how strong the blur is, set `--panorail-veil-blur` (default `32px`) on `.panorail`.
+
 ### Methods on the returned handle
 
 | Method | Description |
@@ -128,6 +145,7 @@ The button takes no HTML string: what goes in it is up to `mount`. An `<svg>` in
 | `close()` | Closes the viewer, then calls `onClose`. |
 | `destroy()` | Closes the viewer at once without calling `onClose`. Use it when your own component is being torn down. |
 | `setPanelOpen(open)` | Opens or closes the panel, when there is one. Does not call `onToggle`. |
+| `setVeil(veil?)` | Replaces `veil` and applies it to the images already loaded. Pass nothing to blur none. |
 
 ### Labels
 

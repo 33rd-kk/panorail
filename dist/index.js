@@ -34,6 +34,21 @@ export function openViewer(options) {
     let panelOpen = !!panel?.open;
     let panelCleanup;
     const buttonCleanups = [];
+    let veil = options.veil;
+    // Every image element the viewer holds, loaded or cached, with its item, so
+    // a new veil reaches them all.
+    const images = new Map();
+    const applyVeil = (img, item) => {
+        let veiled = false;
+        try {
+            veiled = !!veil?.(item);
+        }
+        catch {
+            // A veil that fails covers the image rather than leaving it in view.
+            veiled = true;
+        }
+        img.classList.toggle("panorail-veiled", veiled);
+    };
     // Shared with PhotoSwipe, which reads its length for the slide count, so it
     // is updated in place rather than replaced.
     const dataSource = items.slice();
@@ -117,6 +132,8 @@ export function openViewer(options) {
             img.referrerPolicy = item.referrerPolicy;
         img.alt = item.name ?? "";
         img.decoding = "async";
+        images.set(img, item);
+        applyVeil(img, item);
         content.state = "loading";
         img.onload = () => {
             if (content.data.panorailGuess && img.naturalWidth && img.naturalHeight) {
@@ -141,6 +158,10 @@ export function openViewer(options) {
                 content.onError();
         };
         img.src = fallbacks.current(item);
+    });
+    pswp.on("contentDestroy", ({ content }) => {
+        if (content.element instanceof HTMLImageElement)
+            images.delete(content.element);
     });
     pswp.on("uiRegister", () => {
         pswp.ui?.registerElement({
@@ -322,6 +343,7 @@ export function openViewer(options) {
         panelCleanup = undefined;
         for (const cleanup of buttonCleanups.splice(0))
             cleanup();
+        images.clear();
         if (!silent)
             options.onClose?.();
     });
@@ -385,6 +407,11 @@ export function openViewer(options) {
         setPanelOpen(open) {
             if (panel && !closed && open !== panelOpen)
                 applyPanelOpen(open);
+        },
+        setVeil(next) {
+            veil = next;
+            for (const [img, item] of images)
+                applyVeil(img, item);
         },
     };
 }
