@@ -24,7 +24,7 @@ It is a thin layer over [PhotoSwipe 5](https://photoswipe.com/) (MIT). Gestures 
 ## Install
 
 ```sh
-npm install github:33rd-kk/panorail#v0.2.2
+npm install github:33rd-kk/panorail#v0.3.0
 ```
 
 `dist/` is committed to the repository, so installing needs no build step.
